@@ -1,0 +1,31 @@
+{
+  "name": "firesale",
+  "version": "1.0.0",
+  "description": "A Markdown-to-HTML editor built on Electron and used to teach how to build applications in Electron.",
+  "main": "app/main.js",
+  "dependencies": {
+    "jquery": "^3.1.1",
+    "marked": "^0.3.6"
+  },
+  "devDependencies": {
+    "devtron": "^1.4.0",
+    "electron": "^1.4.6",
+    "electron-packager": "^8.2.0",
+    "eslint": "^3.10.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stevekinney/firesale-fem.git"
+  },
+  "keywords": [],
+  "author": "Steve Kinney <hello@stevekinney.net> (http://stevekinney.net)",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/stevekinney/firesale-fem/issues"
+  },
+  "homepage": "https://github.com/stevekinney/firesale-fem#readme"
+}
