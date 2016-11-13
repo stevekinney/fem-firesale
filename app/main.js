@@ -1,23 +1,33 @@
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('fs');
 
-let mainWindow = null;
+let windows = [];
 
 app.on('ready', () => {
-  mainWindow = new BrowserWindow();
-
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  createWindow();
   require('devtron').install();
-
-  showOpenFileDialog();
-
-  mainWindow.on('closed', () => {
-    mainWindow = null;
-  });
 });
 
-const showOpenFileDialog = exports.showOpenFileDialog = () => {
-  const files = dialog.showOpenDialog(mainWindow, {
+const createWindow = () => {
+  const newWindow = new BrowserWindow();
+  windows.push(newWindow);
+
+  newWindow.loadURL(`file://${__dirname}/index.html`);
+
+  newWindow.once('ready-to-show', () => {
+    newWindow.show();
+  });
+
+  newWindow.on('closed', () => {
+    windows = windows.filter(w => w !== newWindow);
+    newWindow = null;
+  });
+
+  return newWindow;
+};
+
+const showOpenFileDialog = exports.showOpenFileDialog = (win) => {
+  const files = dialog.showOpenDialog(win, {
     properties: ['openFile'],
     filters: [
       { name: 'Text Files', extensions: ['txt'] },
@@ -27,10 +37,10 @@ const showOpenFileDialog = exports.showOpenFileDialog = () => {
 
   if (!files) return;
 
-  openFile(files[0]);
+  openFile(files[0], win);
 };
 
-const openFile = (file) => {
+const openFile = (file, win) => {
   const content = fs.readFileSync(file).toString();
-  mainWindow.webContents.send('file-opened', file, content);
+  win.webContents.send('file-opened', file, content);
 };
