@@ -43,4 +43,5 @@ const showOpenFileDialog = exports.showOpenFileDialog = (win) => {
 const openFile = (file, win) => {
   const content = fs.readFileSync(file).toString();
   win.webContents.send('file-opened', file, content);
+  win.setTitle(`${file} - Fire Sale`);
 };
