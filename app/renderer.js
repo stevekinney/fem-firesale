@@ -71,10 +71,9 @@ ipcRenderer.on('file-opened', (event, file, content) => {
   filePath = file;
   originalContent = content;
 
-  markdownView.value = content;
-
   currentWindow.setRepresentedFilename(filePath);
   setAsEdited(false, filePath);
 
+  markdownView.value = content;
   renderMarkdownToHtml(content);
 });
