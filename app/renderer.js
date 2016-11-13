@@ -2,7 +2,7 @@ const { ipcRenderer, remote } = require('electron');
 const currentWindow = remote.getCurrentWindow();
 
 const {
-  showOpenFileDialog,
+  openFile,
   createWindow,
   saveMarkdown,
   saveHTML
@@ -51,7 +51,7 @@ newFileButton.addEventListener('click', () => {
 });
 
 openFileButton.addEventListener('click', () => {
-  showOpenFileDialog(currentWindow);
+  openFile(currentWindow);
 });
 
 saveMarkdownButton.addEventListener('click', () => {

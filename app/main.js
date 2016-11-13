@@ -34,7 +34,7 @@ const createWindow = exports.createWindow = (file) => {
   return newWindow;
 };
 
-const showOpenFileDialog = exports.showOpenFileDialog = (win) => {
+const getFileFromUserInput = (win) => {
   const files = dialog.showOpenDialog(win, {
     properties: ['openFile'],
     filters: [
@@ -45,11 +45,14 @@ const showOpenFileDialog = exports.showOpenFileDialog = (win) => {
 
   if (!files) return;
 
-  openFile(win, files[0]);
+  return files[0];
 };
 
 const openFile = exports.openFile = (win, file) => {
+  if (!file) file = getFileFromUserInput(win);
+
   const content = fs.readFileSync(file).toString();
+
   app.addRecentDocument(file);
   win.webContents.send('file-opened', file, content);
 };
