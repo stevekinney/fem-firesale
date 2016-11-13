@@ -1,25 +1,33 @@
 const { app, BrowserWindow, dialog } = require('electron');
 const fs = require('fs');
 
-let windows = [];
+const windows = new Set();
+
+app.on('will-finish-launching', () => {
+  app.on('open-file', (event, file) => {
+    event.preventDefault();
+    createWindow(file);
+  });
+});
 
 app.on('ready', () => {
   createWindow();
   require('devtron').install();
 });
 
-const createWindow = () => {
-  const newWindow = new BrowserWindow();
-  windows.push(newWindow);
+const createWindow = exports.createWindow = (file) => {
+  let newWindow = new BrowserWindow({ show: false });
+  windows.add(newWindow, null);
 
   newWindow.loadURL(`file://${__dirname}/index.html`);
 
   newWindow.once('ready-to-show', () => {
+    if (file) openFile(newWindow, file);
     newWindow.show();
   });
 
   newWindow.on('closed', () => {
-    windows = windows.filter(w => w !== newWindow);
+    windows.delete(newWindow);
     newWindow = null;
   });
 
@@ -37,11 +45,42 @@ const showOpenFileDialog = exports.showOpenFileDialog = (win) => {
 
   if (!files) return;
 
-  openFile(files[0], win);
+  openFile(win, files[0]);
 };
 
-const openFile = (file, win) => {
+const openFile = exports.openFile = (win, file) => {
   const content = fs.readFileSync(file).toString();
+  app.addRecentDocument(file);
   win.webContents.send('file-opened', file, content);
-  win.setTitle(`${file} - Fire Sale`);
+};
+
+const saveMarkdown = exports.saveMarkdown = (win, file, content) => {
+  if (!file) {
+    file = dialog.showSaveDialog(win, {
+      title: 'Save Markdown',
+      defaultPath: app.getPath('documents'),
+      filters: [
+        { name: 'Markdown Files', extensions: ['md', 'markdown'] }
+      ]
+    });
+  }
+
+  if (!file) return;
+
+  fs.writeFileSync(file, content);
+  win.webContents.send('file-opened', file, content);
+};
+
+const saveHTML = exports.saveHTML = (win, content) => {
+  let file = dialog.showSaveDialog(win, {
+    title: 'Save Markdown',
+    defaultPath: app.getPath('documents'),
+    filters: [
+      { name: 'HTML Files', extensions: ['html'] }
+    ]
+  });
+
+  if (!file) return;
+
+  fs.writeFileSync(file, content);
 };
