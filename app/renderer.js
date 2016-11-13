@@ -77,3 +77,45 @@ ipcRenderer.on('file-opened', (event, file, content) => {
   markdownView.value = content;
   renderMarkdownToHtml(content);
 });
+
+document.addEventListener('dragover', () => false);
+document.addEventListener('dragleave', () => false);
+document.addEventListener('drop', () => false);
+
+const getDraggedFile = (event) => event.dataTransfer.files[0];
+
+const fileTypeIsSupported = (file) => {
+  return ['text/plain', 'text/markdown'].includes(file.type);
+};
+
+markdownView.addEventListener('dragover', (event) => {
+  const file = getDraggedFile(event);
+
+  if (fileTypeIsSupported(file)) {
+    markdownView.classList.add('drag-over');
+  } else {
+    markdownView.classList.add('drag-error');
+  }
+});
+
+markdownView.addEventListener('dragleave', () => {
+  markdownView.classList.remove('drag-over');
+  markdownView.classList.remove('drag-error');
+});
+
+markdownView.addEventListener('drop', (event) => {
+  event.preventDefault();
+
+  const file = getDraggedFile(event);
+
+  if (fileTypeIsSupported(file)) {
+    openFile(currentWindow, file.path);
+  } else {
+    alert('That file type is not supported');
+  }
+
+  markdownView.classList.remove('drag-over');
+  markdownView.classList.remove('drag-error');
+
+  return false;
+});
