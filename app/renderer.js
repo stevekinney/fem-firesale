@@ -1,5 +1,6 @@
 const { ipcRenderer, remote } = require('electron');
 const currentWindow = remote.getCurrentWindow();
+const { Menu } = remote;
 
 const {
   openFile,
@@ -50,22 +51,31 @@ newFileButton.addEventListener('click', () => {
   createWindow();
 });
 
-openFileButton.addEventListener('click', () => {
+const onOpenFile = () => {
   openFile(currentWindow);
-});
+};
 
-saveMarkdownButton.addEventListener('click', () => {
+openFileButton.addEventListener('click', onOpenFile);
+ipcRenderer.on('open-file', onOpenFile);
+
+const onSaveMarkdown = () => {
   saveMarkdown(currentWindow, filePath, markdownView.value);
-});
+};
+
+saveMarkdownButton.addEventListener('click', onSaveMarkdown);
+ipcRenderer.on('save-markdown', onSaveMarkdown);
 
 revertButton.addEventListener('click', () => {
   markdownView.value = originalContent;
   renderMarkdownToHtml(originalContent);
 });
 
-saveHtmlButton.addEventListener('click', () => {
+const onSaveHtml = () => {
   saveHTML(currentWindow, htmlView.innerHTML);
-});
+};
+
+saveHtmlButton.addEventListener('click', onSaveHtml);
+ipcRenderer.on('save-html', onSaveHtml);
 
 ipcRenderer.on('file-opened', (event, file, content) => {
   filePath = file;
@@ -118,4 +128,32 @@ markdownView.addEventListener('drop', (event) => {
   markdownView.classList.remove('drag-error');
 
   return false;
+});
+
+const markdownContextMenu = Menu.buildFromTemplate([
+  { label: 'Open File', click() { openFile(); } },
+  { label: 'Save Markdown', click() { onSaveMarkdown(); } },
+  { type: 'separator' },
+  { label: 'Cut', role: 'cut' },
+  { label: 'Copy', role: 'copy' },
+  { label: 'Paste', role: 'paste' },
+  { label: 'Select All', role: 'selectall' },
+]);
+
+markdownView.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  markdownContextMenu.popup();
+});
+
+const htmlContextMenu = Menu.buildFromTemplate([
+  { label: 'Export HTML', click() { onSaveHtml(); } },
+  {
+    label: 'Copy HTML to Clipboard',
+    click() { require('electron').clipboard.writeText(htmlView.innerHTML); }
+  }
+]);
+
+htmlView.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  htmlContextMenu.popup();
 });

@@ -1,8 +1,8 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('fs');
 
 const windows = new Set();
-const openFiles = new Map();
+const fileWatchers = new Map();
 
 app.on('will-finish-launching', () => {
   app.on('open-file', (event, file) => {
@@ -13,6 +13,10 @@ app.on('will-finish-launching', () => {
 
 app.on('ready', () => {
   createWindow();
+
+  const applicationMenu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(applicationMenu);
+
   require('devtron').install();
 });
 
@@ -99,12 +103,160 @@ const startWatchingFile = (win, file) => {
     if (event === 'change') { openFile(win, file); }
   });
 
-  openFiles.set(win, watcher);
+  fileWatchers.set(win, watcher);
 };
 
 const stopWatchingFile = (win) => {
-  if (openFiles.has(win)) {
-    openFiles.get(win).close();
-    openFiles.delete(win);
+  if (fileWatchers.has(win)) {
+    fileWatchers.get(win).close();
+    fileWatchers.delete(win);
   }
 };
+
+const template = [
+  {
+    label: 'File',
+    submenu: [
+      {
+        label: 'New Window',
+        accelerator: 'CommandOrControl+N',
+        click(item, focusedWindow) {
+          createWindow();
+        },
+      },
+      {
+        label: 'Open File',
+        accelerator: 'CommandOrControl+O',
+        click(item, focusedWindow) {
+          if (focusedWindow) focusedWindow.webContents.send('open-file');
+        },
+      },
+      {
+        label: 'Save Markdown',
+        accelerator: 'CommandOrControl+S',
+        click(item, focusedWindow) {
+          if (focusedWindow) focusedWindow.webContents.send('save-markdown');
+        },
+      },
+      {
+        label: 'Export HTML',
+        accelerator: 'Shift+CommandOrControl+S',
+        click(item, focusedWindow) {
+          if (focusedWindow) focusedWindow.webContents.send('export-html');
+        },
+      },
+    ]
+  },
+  {
+    label: 'Edit',
+    submenu: [
+      {
+        label: 'Undo',
+        accelerator: 'CommandOrControl+Z',
+        role: 'undo',
+      },
+      {
+        label: 'Redo',
+        accelerator: 'Shift+CommandOrControl+Z',
+        role: 'redo',
+      },
+      { type: 'separator' },
+      {
+        label: 'Cut',
+        accelerator: 'CommandOrControl+X',
+        role: 'cut',
+      },
+      {
+        label: 'Copy',
+        accelerator: 'CommandOrControl+C',
+        role: 'copy',
+      },
+      {
+        label: 'Paste',
+        accelerator: 'CommandOrControl+V',
+        role: 'paste',
+      },
+      {
+        label: 'Select All',
+        accelerator: 'CommandOrControl+A',
+        role: 'selectall',
+      },
+    ],
+  },
+  {
+    label: 'Window',
+    submenu: [
+      {
+        label: 'Minimize',
+        accelerator: 'CommandOrControl+M',
+        role: 'minimize',
+      },
+      {
+        label: 'Close',
+        accelerator: 'CommandOrControl+W',
+        role: 'close',
+      },
+    ],
+  },
+  {
+    label: 'Help',
+    role: 'help',
+    submenu: [
+      {
+        label: 'Toggle Developer Tools',
+        click(item, focusedWindow) {
+          if (focusedWindow) focusedWindow.webContents.toggleDevTools();
+        }
+      }
+    ],
+  },
+];
+
+if (process.platform === 'darwin') {
+  const name = 'Fire Sale';
+  template.unshift({
+    label: name,
+    submenu: [
+      {
+        label: `About ${name}`,
+        role: 'about',
+      },
+      { type: 'separator' },
+      {
+        label: 'Services',
+        role: 'services',
+        submenu: [],
+      },
+      { type: 'separator' },
+      {
+        label: `Hide ${name}`,
+        accelerator: 'Command+H',
+        role: 'hide',
+      },
+      {
+        label: 'Hide Others',
+        accelerator: 'Command+Alt+H',
+        role: 'hideothers',
+      },
+      {
+        label: 'Show All',
+        role: 'unhide',
+      },
+      { type: 'separator' },
+      {
+        label: `Quit ${name}`,
+        accelerator: 'Command+Q',
+        click() { app.quit(); },
+      }
+    ],
+  });
+
+  const windowMenu = template.find(item => item.label === 'Window');
+  windowMenu.submenu.push(
+    { type: 'separator' },
+    {
+      label: 'Bring All to Front',
+      role: 'front',
+    }
+  );
+}
