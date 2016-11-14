@@ -7,16 +7,13 @@ app.on('ready', () => {
   mainWindow = new BrowserWindow();
 
   mainWindow.loadURL(`file://${__dirname}/index.html`);
-  require('devtron').install();
-
-  showOpenFileDialog();
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
 });
 
-const showOpenFileDialog = exports.showOpenFileDialog = () => {
+const getFileFromUserSelection = exports.getFileFromUserSelection = () => {
   const files = dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
@@ -27,10 +24,11 @@ const showOpenFileDialog = exports.showOpenFileDialog = () => {
 
   if (!files) return;
 
-  openFile(files[0]);
+  return files[0];
 };
 
 const openFile = (file) => {
-  const content = fs.readFileSync(file).toString();
+  const f = file || getFileFromUserSelection();
+  const content = fs.readFileSync(f).toString();
   mainWindow.webContents.send('file-opened', file, content);
 };
