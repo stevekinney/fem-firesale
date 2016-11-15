@@ -1,4 +1,5 @@
-const { ipcRenderer, remote } = require('electron');
+const { ipcRenderer, remote, shell } = require('electron');
+const { dialog } = remote;
 const { createWindow, openFile } = remote.require('./main');
 const currentWindow = remote.getCurrentWindow();
 
@@ -11,6 +12,16 @@ const openFileButton = document.querySelector('#open-file');
 const saveMarkdownButton = document.querySelector('#save-markdown');
 const revertButton = document.querySelector('#revert');
 const saveHtmlButton = document.querySelector('#save-html');
+const showFileButton = document.querySelector('#show-file');
+const openInEditorButton = document.querySelector('#open-in-editor');
+
+openInEditorButton.addEventListener('click', () => {
+  shell.openItem(filePath);
+});
+
+showFileButton.addEventListener('click', () => {
+  shell.showItemInFolder(filePath);
+});
 
 let filePath = null;
 let originalContent = '';
@@ -58,4 +69,28 @@ ipcRenderer.on('file-opened', (event, file, content) => {
 
   markdownView.value = content;
   renderMarkdownToHtml(content);
+
+  openInEditorButton.disabled = false;
+  showFileButton.disabled = false;
 });
+
+ipcRenderer.on('file-changed', (event, file, content) => {
+  const result = dialog.showMessageBox(currentWindow, {
+    type: 'warning',
+    title: 'Overwrite Current Unsaved Changes?',
+    message: 'The contents of this file have changed on the file system. Would you like to load the new contents?',
+    buttons: [
+      'Yes',
+      'Cancel',
+    ],
+    cancelId: 1,
+    defaultId: 0
+  });
+
+  if (result === 0) { openFile(currentWindow, file); }
+});
+
+document.addEventListener('dragstart', event => event.preventDefault());
+document.addEventListener('dragover', event => event.preventDefault());
+document.addEventListener('dragleave', event => event.preventDefault());
+document.addEventListener('drop', event => event.preventDefault());

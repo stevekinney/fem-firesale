@@ -1,7 +1,8 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, Menu } = require('electron');
 const fs = require('fs');
 
 const windows = new Set();
+const openFiles = new Map();
 
 app.on('will-finish-launching', () => {
   app.on('open-file', (event, file) => {
@@ -11,6 +12,7 @@ app.on('will-finish-launching', () => {
 });
 
 app.on('ready', () => {
+  Menu.setApplicationMenu(require('./lib/application-menu'));
   createWindow();
 });
 
@@ -27,6 +29,8 @@ const createWindow = exports.createWindow = (file) => {
 
   newWindow.on('close', (event) => {
     if (newWindow.isDocumentEdited()) {
+      event.preventDefault();
+
       const result = dialog.showMessageBox(newWindow, {
         type: 'warning',
         title: 'Quit with Unsaved Changes?',
@@ -45,6 +49,7 @@ const createWindow = exports.createWindow = (file) => {
 
   newWindow.on('closed', () => {
     windows.delete(newWindow);
+    stopWatchingFile(newWindow);
     newWindow = null;
   });
 
@@ -67,7 +72,30 @@ const getFileFromUserSelection = exports.getFileFromUserSelection = (win) => {
 
 const openFile = exports.openFile = (win, file = getFileFromUserSelection(win)) => {
   const content = fs.readFileSync(file).toString();
+  startWatchingFile(win, file);
+
   app.addRecentDocument(file);
+
   win.webContents.send('file-opened', file, content);
   win.setRepresentedFilename(file);
+};
+
+const startWatchingFile = (win, file) => {
+  stopWatchingFile(win);
+
+  const watcher = fs.watch(file, (event) => {
+    if (event === 'change') {
+      const content = fs.readFileSync(file);
+      win.webContents.send('file-changed', file, content);
+    }
+  });
+
+  openFiles.set(win, watcher);
+};
+
+const stopWatchingFile = (win) => {
+  if (openFiles.has(win)) {
+    openFiles.get(win).close();
+    openFiles.delete(win);
+  }
 };
