@@ -106,11 +106,13 @@ const stopWatchingFile = (targetWindow) => {
 app.on('ready', () => {
   const template = [
     {
-      label: 'Edit',
+      label: 'File',
       submenu: [
         {
-          label: 'Cut',
-          role: 'cut',
+          label: 'Save',
+          click(item, focusedWindow) {
+            if (focusedWindow) focusedWindow.webContents.send('save-file');
+          },
           accelerator: 'CommandOrControl+X'
         }
       ]
